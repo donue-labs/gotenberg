@@ -479,6 +479,7 @@ func uploadRoute(libreOffice libreofficeapi.Uno) api.Route {
 					),
 				)
 			}
+			defer os.Remove(inputPath) // This ensures input file is always cleaned up
 			defer dst.Close()
 
 			// Copy the uploaded file to the temporary file
@@ -520,6 +521,10 @@ func uploadRoute(libreOffice libreofficeapi.Uno) api.Route {
 			if err != nil {
 				return fmt.Errorf("add output paths: %w", err)
 			}
+
+			c.Response().After(func() {
+				os.Remove(outputPath)
+			})
 
 			return nil
 		},
