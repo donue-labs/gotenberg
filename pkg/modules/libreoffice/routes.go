@@ -327,7 +327,7 @@ func validateSession(c echo.Context, endpoint string) error {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := http.NewRequest(http.MethodGet, endpoint+"/users/getUserInfo", nil)
 	if err != nil {
 		return api.WrapError(
 			fmt.Errorf("create session validation request: %w", err),
