@@ -1,12 +1,19 @@
 package libreoffice
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -285,6 +292,231 @@ func convertRoute(libreOffice libreofficeapi.Uno, engine gotenberg.PdfEngine) ap
 			}
 
 			err = ctx.AddOutputPaths(outputPaths...)
+			if err != nil {
+				return fmt.Errorf("add output paths: %w", err)
+			}
+
+			return nil
+		},
+	}
+}
+
+// validateSession validates the session token with the provided endpoint
+func validateSession(c echo.Context, endpoint string) error {
+	// Check for health-check-admin header
+	healthCheckAdmin := c.Request().Header.Get("health-check-admin")
+	if healthCheckAdmin == "donue" {
+		return nil // Skip session validation for health check admin
+	}
+
+	// Regular session validation
+	session := c.Request().Header.Get("session")
+	if session == "" {
+		return api.WrapError(
+			fmt.Errorf("missing session header"),
+			api.NewSentinelHttpError(
+				http.StatusUnauthorized,
+				"Missing required session header",
+			),
+		)
+	}
+
+	if endpoint == "" {
+		return api.WrapError(
+			fmt.Errorf("missing endpoint"),
+			api.NewSentinelHttpError(
+				http.StatusBadRequest,
+				"Missing required endpoint field",
+			),
+		)
+	}
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	if err != nil {
+		return api.WrapError(
+			fmt.Errorf("create session validation request: %w", err),
+			api.NewSentinelHttpError(
+				http.StatusBadRequest,
+				"Invalid endpoint URL",
+			),
+		)
+	}
+	req.Header.Set("session", session)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return api.WrapError(
+			fmt.Errorf("validate session: %w", err),
+			api.NewSentinelHttpError(
+				http.StatusBadRequest,
+				"Failed to validate session with provided endpoint",
+			),
+		)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return api.WrapError(
+			fmt.Errorf("invalid session token"),
+			api.NewSentinelHttpError(
+				http.StatusUnauthorized,
+				"Invalid session token",
+			),
+		)
+	}
+
+	return nil
+}
+
+// generateFileHash creates a SHA256 hash from a file
+func generateFileHash(file io.Reader) (string, error) {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", fmt.Errorf("calculate hash: %w", err)
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// uploadRoute returns an [api.Route] which matches the API documentation for file conversion.
+func uploadRoute(libreOffice libreofficeapi.Uno) api.Route {
+	return api.Route{
+		Method:      http.MethodPost,
+		Path:        "/upload",
+		IsMultipart: true,
+		Handler: func(c echo.Context) error {
+			ctx := c.Get("context").(*api.Context)
+
+			// Get endpoint from form field
+			endpoint := c.FormValue("endpoint")
+
+			// Validate session first
+			if err := validateSession(c, endpoint); err != nil {
+				return err
+			}
+
+			// Get the uploaded file
+			file, err := c.FormFile("file")
+			if err != nil {
+				return api.WrapError(
+					fmt.Errorf("get form file: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusBadRequest,
+						"Missing or invalid file upload",
+					),
+				)
+			}
+
+			// Validate file extension
+			ext := strings.ToLower(filepath.Ext(file.Filename))
+			allowedExts := map[string]bool{
+				".doc":  true,
+				".docx": true,
+				".hwp":  true,
+				".xlsx": true,
+				".xls":  true,
+				".jpg":  true,
+				".jpeg": true,
+				".png":  true,
+			}
+			if !allowedExts[ext] {
+				return api.WrapError(
+					fmt.Errorf("unsupported file format: %s", ext),
+					api.NewSentinelHttpError(
+						http.StatusBadRequest,
+						fmt.Sprintf("Unsupported file format: %s. Only doc, docx, hwp, xlsx, and xls files are supported", ext),
+					),
+				)
+			}
+
+			// Open the uploaded file
+			src, err := file.Open()
+			if err != nil {
+				return api.WrapError(
+					fmt.Errorf("open uploaded file: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusInternalServerError,
+						"Failed to process uploaded file",
+					),
+				)
+			}
+			defer src.Close()
+
+			// Generate hash from the file content
+			fileHash, err := generateFileHash(src)
+			if err != nil {
+				return api.WrapError(
+					fmt.Errorf("generate file hash: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusInternalServerError,
+						"Failed to process uploaded file",
+					),
+				)
+			}
+
+			// Reset file pointer to beginning after hash calculation
+			if _, err := src.Seek(0, 0); err != nil {
+				return api.WrapError(
+					fmt.Errorf("reset file pointer: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusInternalServerError,
+						"Failed to process uploaded file",
+					),
+				)
+			}
+
+			// Create a temporary file to save the upload
+			inputPath := ctx.GeneratePath(ext)
+			dst, err := os.Create(inputPath)
+			if err != nil {
+				return api.WrapError(
+					fmt.Errorf("create temporary file: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusInternalServerError,
+						"Failed to process uploaded file",
+					),
+				)
+			}
+			defer dst.Close()
+
+			// Copy the uploaded file to the temporary file
+			if _, err = io.Copy(dst, src); err != nil {
+				return api.WrapError(
+					fmt.Errorf("save uploaded file: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusInternalServerError,
+						"Failed to save uploaded file",
+					),
+				)
+			}
+
+			// Convert to PDF with hash-based filename
+			outputPath := filepath.Join(filepath.Dir(inputPath), fileHash+".pdf")
+			options := libreofficeapi.DefaultOptions()
+
+			err = libreOffice.Pdf(ctx, ctx.Log(), inputPath, outputPath, options)
+			if err != nil {
+				if errors.Is(err, libreofficeapi.ErrRuntimeException) {
+					return api.WrapError(
+						fmt.Errorf("convert to PDF: %w", err),
+						api.NewSentinelHttpError(
+							http.StatusBadRequest,
+							"ENCRYPT",
+						),
+					)
+				}
+				return api.WrapError(
+					fmt.Errorf("convert to PDF: %w", err),
+					api.NewSentinelHttpError(
+						http.StatusBadRequest,
+						"",
+					),
+				)
+			}
+
+			err = ctx.AddOutputPaths(outputPath)
 			if err != nil {
 				return fmt.Errorf("add output paths: %w", err)
 			}

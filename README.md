@@ -36,6 +36,12 @@ The API is now available on your host at http://localhost:3000.
 
 Head to the [documentation](https://gotenberg.dev/docs/getting-started/introduction) to learn how to interact with it 🚀
 
+## New Feature
+### New API Documentation
+
+For detailed information about available endpoints and how to use them, see the [New API Documentation](API_DOC.md).
+
+
 ## Sponsors
 
 <p align="center">

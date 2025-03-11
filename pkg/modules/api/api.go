@@ -382,8 +382,9 @@ func (a *Api) Validate() error {
 			return fmt.Errorf("route '%s' does not start with /", route.Path)
 		}
 
-		if route.IsMultipart && !strings.HasPrefix(route.Path, "/forms") {
-			return fmt.Errorf("multipart/form-data route '%s' does not start with /forms", route.Path)
+		// Add /upload route in addition to /forms
+		if route.IsMultipart && (!strings.HasPrefix(route.Path, "/forms") && !strings.HasPrefix(route.Path, "/upload")) {
+			return fmt.Errorf("multipart/form-data route '%s' does not start with /forms or /upload", route.Path)
 		}
 
 		if route.Method == "" {
@@ -495,14 +496,14 @@ func (a *Api) Start() error {
 		)
 	}
 
-	// Root route.
-	a.srv.GET(
-		a.rootPath,
-		func(c echo.Context) error {
-			return c.HTML(http.StatusOK, `Hey, Gotenberg has no UI, it's an API. Head to the <a href="https://gotenberg.dev">documentation</a> to learn how to interact with it 🚀`)
-		},
-		securityMiddleware,
-	)
+	// Root route. Disable root router
+	// a.srv.GET(
+	// 	a.rootPath,
+	// 	func(c echo.Context) error {
+	// 		return c.HTML(http.StatusOK, `Hey, Gotenberg has no UI, it's an API. Head to the <a href="https://gotenberg.dev">documentation</a> to learn how to interact with it 🚀`)
+	// 	},
+	// 	securityMiddleware,
+	// )
 
 	// Favicon route.
 	a.srv.GET(

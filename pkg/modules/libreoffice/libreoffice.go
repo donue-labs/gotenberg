@@ -75,7 +75,11 @@ func (mod *LibreOffice) Routes() ([]api.Route, error) {
 	}
 
 	return []api.Route{
-		convertRoute(mod.api, mod.engine),
+		rootHealthRoute(),
+		health1Route(),                    // Health check 1 endpoint
+		health2Route(),                    // Health check 2 endpoint
+		uploadRoute(mod.api),              // Original /upload endpoint
+		convertRoute(mod.api, mod.engine), // LibreOffice conversion endpoint
 	}, nil
 }
 
