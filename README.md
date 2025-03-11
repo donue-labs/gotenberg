@@ -39,7 +39,7 @@ Head to the [documentation](https://gotenberg.dev/docs/getting-started/introduct
 ## New Feature
 ### New API Documentation
 
-For detailed information about available endpoints and how to use them, see the [New API Documentation](API_DOC.md).
+For detailed information about available endpoints and how to use them, see the [New API Documentation](NEW_API_DOC.md).
 
 
 ## Sponsors
