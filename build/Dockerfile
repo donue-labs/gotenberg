@@ -132,7 +132,12 @@ RUN \
     fonts-noto-mono \
     fonts-noto-ui-core \
     fonts-sil-gentium \
-    fonts-sil-gentium-basic &&\
+    fonts-sil-gentium-basic \
+    # Additional fonts. 
+    fonts-nanum \
+    fonts-nanum-extra \
+    fonts-nanum-eco &&\
+    # Cleanup.
     rm -f ./ttf-mscorefonts-installer_3.8.1_all.deb &&\
     # Add Color and Black-and-White Noto emoji font.
     # Credits:
