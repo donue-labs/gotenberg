@@ -1,6 +1,6 @@
 <p align="center">
     <img src="https://user-images.githubusercontent.com/8983173/130322857-185831e2-f041-46eb-a17f-0a69d066c4e5.png" alt="Gotenberg Logo" width="150" height="150" />
-    <h3 align="center">Gotenberg</h3>
+    <h3 align="center">Gotenberg (For Donue)</h3>
     <p align="center">A containerized API for seamless PDF conversion</p>
     <p align="center">
         <a href="https://hub.docker.com/r/gotenberg/gotenberg"><img alt="Total downloads (gotenberg/gotenberg)" src="https://img.shields.io/docker/pulls/gotenberg/gotenberg"></a>
@@ -21,23 +21,17 @@ numerous document formats (HTML, Markdown, Word, Excel, etc.) into PDF files, an
 
 ## Quick Start
 
-Open a terminal and run the following command:
+You can start Gotenberg using Docker Compose. First, ensure you have Docker and Docker Compose installed, then run:
 
-```
-docker run --rm -p 3000:3000 gotenberg/gotenberg:8
-```
-
-Alternatively, using the historic Docker repository from our sponsor [TheCodingMachine](https://www.thecodingmachine.com):
-
-```
-docker run --rm -p 3000:3000 thecodingmachine/gotenberg:8
+```bash
+docker-compose up -d
 ```
 
-The API is now available on your host at http://localhost:3000.
+The API will be available on your host at http://localhost:3000.
 
 Head to the [documentation](https://gotenberg.dev/docs/getting-started/introduction) to learn how to interact with it 🚀
 
-## New Feature
+## New Features (For Donue)
 ### New API Documentation
 
 For detailed information about available endpoints and how to use them, see the [New API Documentation](NEW_API_DOC.md).
