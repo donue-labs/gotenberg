@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -329,7 +328,7 @@ func validateSession(c echo.Context, endpoint string) error {
 		Timeout: 10 * time.Second,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, path.Join(endpoint, "users/getUserInfo"), nil)
+	req, err := http.NewRequest(http.MethodPost, endpoint+"/users/getUserInfo", nil)
 	if err != nil {
 		return api.WrapError(
 			fmt.Errorf("create session validation request: %w", err),
