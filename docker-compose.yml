@@ -1,6 +1,6 @@
 services:
-  donue-converter-server:
-    image: donue-converter-server
+  donue-convert-server:
+    image: donue-convert-server
     build:
       context: .
       dockerfile: build/Dockerfile
@@ -12,7 +12,7 @@ services:
         GOTENBERG_USER_UID: 1001
         NOTO_COLOR_EMOJI_VERSION: 2.047
         PDFTK_VERSION: v3.3.3
-    container_name: donue-converter-server
+    container_name: donue-convert-server
     ports:
       - '4300:3000'
     restart: unless-stopped
