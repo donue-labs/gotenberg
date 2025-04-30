@@ -1,5 +1,6 @@
 services:
   donue-converter-server:
+    image: donue-converter-server
     build:
       context: .
       dockerfile: build/Dockerfile
