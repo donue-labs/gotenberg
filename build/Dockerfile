@@ -175,8 +175,10 @@ RUN \
     echo "deb http://deb.debian.org/debian sid main" > /etc/apt/sources.list &&\
     apt-get update -qq &&\
     apt-get upgrade -yqq &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends -t sid libreoffice &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends -t sid libreoffice-h2orestart &&\
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends -t sid libreoffice libreoffice-java-common &&\
+    # DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends -t sid libreoffice-h2orestart &&\
+    curl -Ls https://github.com/ebandal/H2Orestart/releases/download/v0.7.3/H2Orestart.oxt -o /usr/lib/libreoffice/share/extensions/H2Orestart.oxt &&\
+    unopkg add --shared /usr/lib/libreoffice/share/extensions/H2Orestart.oxt &&\
     curl -Ls https://raw.githubusercontent.com/gotenberg/unoconverter/v0.1.1/unoconv -o /usr/bin/unoconverter &&\
     chmod +x /usr/bin/unoconverter &&\
     # unoconverter will look for the Python binary, which has to be at version 3.
